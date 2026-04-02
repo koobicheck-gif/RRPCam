@@ -32,12 +32,14 @@ interface UploadPanelProps {
   folderId: string;
   onUploaded: (photos: Photo[]) => void;
   onClose: () => void;
+  demoMode?: boolean;
 }
 
 export function UploadPanel({
   projectId,
   onUploaded,
   onClose,
+  demoMode = false,
 }: UploadPanelProps) {
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [annotating, setAnnotating] = useState<FileEntry | null>(null);
@@ -91,6 +93,34 @@ export function UploadPanel({
       updateFile(entry.id, { status: "uploading", progress: 10 });
 
       try {
+        // Simulate upload progress
+        await new Promise((r) => setTimeout(r, 400));
+        updateFile(entry.id, { progress: 60 });
+        await new Promise((r) => setTimeout(r, 300));
+        updateFile(entry.id, { progress: 90 });
+
+        if (demoMode) {
+          // Return a fake Photo using the local object URL as thumbnail
+          const previewUrl = entry.annotated
+            ? URL.createObjectURL(entry.annotated)
+            : entry.preview;
+          const fakePhoto: Photo = {
+            id: `demo-upload-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            name: entry.file.name,
+            thumbnailUrl: previewUrl,
+            webViewLink: previewUrl,
+            downloadUrl: previewUrl,
+            tag: entry.tag || undefined,
+            caption: entry.caption,
+            createdTime: new Date().toISOString(),
+            mimeType: entry.file.type,
+            size: String(entry.file.size),
+          };
+          updateFile(entry.id, { status: "done", progress: 100 });
+          uploaded.push(fakePhoto);
+          continue;
+        }
+
         const formData = new FormData();
         const fileToUpload = entry.annotated
           ? new File([entry.annotated], entry.file.name, {
@@ -106,8 +136,6 @@ export function UploadPanel({
           method: "POST",
           body: formData,
         });
-
-        updateFile(entry.id, { progress: 80 });
 
         if (!res.ok) {
           const data = await res.json();

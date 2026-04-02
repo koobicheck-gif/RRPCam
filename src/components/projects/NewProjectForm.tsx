@@ -25,7 +25,7 @@ const SHINGLE_COLORS = [
   "Other",
 ];
 
-export function NewProjectForm() {
+export function NewProjectForm({ demoMode = false }: { demoMode?: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -56,6 +56,13 @@ export function NewProjectForm() {
 
     setLoading(true);
     try {
+      if (demoMode) {
+        await new Promise((r) => setTimeout(r, 800));
+        // In demo mode, redirect to the first mock project
+        router.push("/project/demo-001");
+        return;
+      }
+
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -1,39 +1,55 @@
 import { Suspense } from "react";
 import { getProjectById } from "@/lib/google/sheets";
 import { getPhotosInFolder } from "@/lib/google/drive";
-import type { Photo } from "@/types";
 import { PublicGallery } from "@/components/share/PublicGallery";
 import { RRPLogo } from "@/components/brand/RRPLogo";
+import {
+  DEMO_MODE,
+  MOCK_PROJECTS,
+  MOCK_PHOTOS,
+  MOCK_SHARE_TOKEN,
+} from "@/lib/mock-data";
+import type { Photo } from "@/types";
 
-export const dynamic = "force-dynamic";
+export const dynamic = DEMO_MODE ? "auto" : "force-dynamic";
 
 interface SharePageProps {
   params: { token: string };
   searchParams: { pid?: string; fid?: string };
 }
 
-export default async function SharePage({ searchParams }: SharePageProps) {
-  const { pid, fid } = searchParams;
+export async function generateStaticParams() {
+  if (!DEMO_MODE) return [];
+  return [{ token: MOCK_SHARE_TOKEN }];
+}
 
-  if (!pid || !fid) {
-    return <InvalidShare />;
+export default async function SharePage({ params, searchParams }: SharePageProps) {
+  // Demo mode: show the third project (Complete/Inspection — most photos)
+  if (DEMO_MODE) {
+    if (params.token !== MOCK_SHARE_TOKEN) return <InvalidShare />;
+    const project = MOCK_PROJECTS[2]; // Chen Property Group
+    const photos = MOCK_PHOTOS[project.id] ?? [];
+    return (
+      <Suspense fallback={<LoadingGallery />}>
+        <PublicGallery project={project} photos={photos} />
+      </Suspense>
+    );
   }
 
-  let project: Awaited<ReturnType<typeof getProjectById>> = null;
+  const { pid, fid } = searchParams;
+  if (!pid || !fid) return <InvalidShare />;
+
+  let project = null;
   let photos: Photo[] = [];
 
   try {
     project = await getProjectById(pid);
-    if (project) {
-      photos = await getPhotosInFolder(fid);
-    }
+    if (project) photos = await getPhotosInFolder(fid);
   } catch (error) {
     console.error("Share page error:", error);
   }
 
-  if (!project) {
-    return <InvalidShare />;
-  }
+  if (!project) return <InvalidShare />;
 
   return (
     <Suspense fallback={<LoadingGallery />}>

@@ -60,6 +60,7 @@ interface ProjectDetailClientProps {
   initialPhotos: Photo[];
   userName: string;
   userImage?: string;
+  demoMode?: boolean;
 }
 
 export function ProjectDetailClient({
@@ -67,6 +68,7 @@ export function ProjectDetailClient({
   initialPhotos,
   userName,
   userImage,
+  demoMode = false,
 }: ProjectDetailClientProps) {
   const [project, setProject] = useState(initialProject);
   const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
@@ -79,20 +81,26 @@ export function ProjectDetailClient({
     async (status: ProjectStatus) => {
       setUpdatingStatus(true);
       try {
-        const res = await fetch(`/api/projects/${project.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setProject(data.project);
+        if (demoMode) {
+          // Simulate a brief delay, then update local state only
+          await new Promise((r) => setTimeout(r, 300));
+          setProject((p) => ({ ...p, status }));
+        } else {
+          const res = await fetch(`/api/projects/${project.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setProject(data.project);
+          }
         }
       } finally {
         setUpdatingStatus(false);
       }
     },
-    [project.id]
+    [project.id, demoMode]
   );
 
   const handlePhotosUploaded = useCallback((newPhotos: Photo[]) => {
@@ -237,6 +245,7 @@ export function ProjectDetailClient({
             projectId={project.id}
             onDeleted={handlePhotoDeleted}
             onUploadClick={() => setShowUpload(true)}
+            demoMode={demoMode}
           />
         )}
         {activeTab === "checklist" && (
@@ -248,6 +257,7 @@ export function ProjectDetailClient({
             initialNotes={project.notes}
             userName={userName}
             userImage={userImage}
+            demoMode={demoMode}
           />
         )}
         {activeTab === "report" && (
@@ -262,6 +272,7 @@ export function ProjectDetailClient({
           folderId={project.folder_id}
           onUploaded={handlePhotosUploaded}
           onClose={() => setShowUpload(false)}
+          demoMode={demoMode}
         />
       )}
 
@@ -271,6 +282,7 @@ export function ProjectDetailClient({
           projectId={project.id}
           address={project.address}
           onClose={() => setShowShare(false)}
+          demoMode={demoMode}
         />
       )}
     </div>

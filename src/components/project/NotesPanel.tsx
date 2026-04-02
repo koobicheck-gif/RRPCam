@@ -13,6 +13,7 @@ interface NotesPanelProps {
   initialNotes: string;
   userName: string;
   userImage?: string;
+  demoMode?: boolean;
 }
 
 export function NotesPanel({
@@ -20,6 +21,7 @@ export function NotesPanel({
   initialNotes,
   userName,
   userImage,
+  demoMode = false,
 }: NotesPanelProps) {
   const [notes, setNotes] = useState(initialNotes);
   const [saving, setSaving] = useState(false);
@@ -42,6 +44,12 @@ export function NotesPanel({
   const handleSaveNotes = async () => {
     setSaving(true);
     try {
+      if (demoMode) {
+        await new Promise((r) => setTimeout(r, 400));
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+        return;
+      }
       await fetch(`/api/projects/${projectId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

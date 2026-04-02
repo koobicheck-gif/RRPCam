@@ -21,6 +21,7 @@ interface PhotoGridProps {
   projectId: string;
   onDeleted: (photoId: string) => void;
   onUploadClick: () => void;
+  demoMode?: boolean;
 }
 
 export function PhotoGrid({
@@ -28,6 +29,7 @@ export function PhotoGrid({
   projectId,
   onDeleted,
   onUploadClick,
+  demoMode = false,
 }: PhotoGridProps) {
   const [tagFilter, setTagFilter] = useState<PhotoTag | "All">("All");
   const [lightbox, setLightbox] = useState<Photo | null>(null);
@@ -40,11 +42,15 @@ export function PhotoGrid({
     if (!confirm(`Delete "${photo.name}"? This cannot be undone.`)) return;
     setDeleting(photo.id);
     try {
-      await fetch(`/api/projects/${projectId}/photos`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileId: photo.id }),
-      });
+      if (!demoMode) {
+        await fetch(`/api/projects/${projectId}/photos`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileId: photo.id }),
+        });
+      } else {
+        await new Promise((r) => setTimeout(r, 300));
+      }
       onDeleted(photo.id);
     } finally {
       setDeleting(null);

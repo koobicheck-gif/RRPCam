@@ -7,9 +7,10 @@ interface SharePanelProps {
   projectId: string;
   address: string;
   onClose: () => void;
+  demoMode?: boolean;
 }
 
-export function SharePanel({ projectId, address, onClose }: SharePanelProps) {
+export function SharePanel({ projectId, address, onClose, demoMode = false }: SharePanelProps) {
   const [loading, setLoading] = useState(false);
   const [shareData, setShareData] = useState<{
     shareUrl: string;
@@ -22,6 +23,15 @@ export function SharePanel({ projectId, address, onClose }: SharePanelProps) {
     setLoading(true);
     setError("");
     try {
+      if (demoMode) {
+        await new Promise((r) => setTimeout(r, 600));
+        const base = typeof window !== "undefined" ? window.location.origin : "";
+        setShareData({
+          shareUrl: `${base}/RRPCam/share/demo-share-token`,
+          driveUrl: "https://drive.google.com/drive/folders/demo-folder-id",
+        });
+        return;
+      }
       const res = await fetch(`/api/projects/${projectId}/share`, {
         method: "POST",
       });
